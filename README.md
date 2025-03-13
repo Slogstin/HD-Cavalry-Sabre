@@ -21,7 +21,7 @@ Janovich for the [Sabre Model](https://sketchfab.com/3d-models/cavalry-saber-ww1
     * You can sprint while preparing an attack to charge at enemies
     * Moving towards enemies gives you a slightly bigger damage bonus
     * Has a thrust attack to finish off foes or inflict some good bleeding
-    * Sheathing it leaves you vulnerable
+    * Sheathing and drawing it leaves you vulnerable
     * Hit AltReload to perform a fancy sheathing animation
     * You can combo normal swings into the fancy sheathing to finish combos in style
     * Loadout code: CSB
