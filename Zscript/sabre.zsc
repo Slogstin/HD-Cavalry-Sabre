@@ -739,7 +739,7 @@ class HDSabre:HDSabreWeapon{
 	goto holdverti;
 	vertiswinghard:
 		#### A 0 A_JumpIfInventory("HDZerk",PBZERK_COOLOFF,"zerkvertiswinghard");
-		SBVW GHI 2;
+		SBVW HI 2;
 		#### A 0 A_Overlay(5,"hitcheckvertical",false);
 		SBVS A 0 
 		{
@@ -747,7 +747,7 @@ class HDSabre:HDSabreWeapon{
 			A_StartSound("Sabre/swing",CHAN_7);
 		}
 
-		SBVS ABCDEFG 1;
+		SBVS ACDEFG 1;
 		TNT1 A 1;
 		//#### A 0 A_JumpIf(pressingaltfire(),"altfire");
 //		TNT1 AAAAAA 1 A_JumpIf(pressingaltfire(),"swingverti");
@@ -805,7 +805,7 @@ class HDSabre:HDSabreWeapon{
 	goto holdhori;
 	horiswinghard:
 		#### A 0 A_JumpIfInventory("HDZerk",PBZERK_COOLOFF,"zerkhoriswinghard");
-		SBHW FED 2;
+		SBHW ED 2;
 		#### A 0 A_Overlay(5,"hitcheckhorizontal",false);
 		SBHS A 0 
 		{
@@ -873,7 +873,7 @@ class HDSabre:HDSabreWeapon{
 		goto nope;
 		
 	zerkvertiswinghard:
-		SBVW GHI 2;
+		SBVW HI 2;
 //		TNT1 A 1;
 		#### A 0 A_Overlay(5,"hitcheckzerkvertical",false);
 		SBVS A 0 
@@ -881,7 +881,7 @@ class HDSabre:HDSabreWeapon{
 			if(hdplayerpawn(self))hdplayerpawn(self).fatigue+=3;
 			A_StartSound("Sabre/swing",CHAN_7);
 		}
-		SBVS ABCDEFG 1;
+		SBVS ACDEFG 1;
 		TNT1 A 2;
 		//#### A 0 A_JumpIf(pressingaltfire(),"altfire");
 //		TNT1 A 3;
@@ -892,7 +892,7 @@ class HDSabre:HDSabreWeapon{
 		goto vertirecoverswing;
 		
 	zerkhoriswinghard:
-		SBHW FED 2;
+		SBHW ED 2;
 //		TNT1 A 1;
 		#### A 0 A_Overlay(5,"hitcheckzerkhorizontal",false);
 		SBHS A 0 
@@ -974,7 +974,7 @@ class HDSabre:HDSabreWeapon{
 		goto stylevertiswing;
 	stylevertiswing:
 		#### A 0 A_JumpIfInventory("HDZerk",PBZERK_COOLOFF,"zerkstylevertiswing");
-		SBVW GHI 2;
+		SBVW HI 2;
 		#### A 0 A_Overlay(5,"hitcheckvertical",false);
 		SBVS A 0 
 		{
@@ -982,7 +982,7 @@ class HDSabre:HDSabreWeapon{
 			A_StartSound("Sabre/swing",CHAN_7);
 		}
 
-		SBVS ABCDEFG 1;
+		SBVS ACDEFG 1;
 		TNT1 A 1;
 		//#### A 0 A_JumpIf(pressingaltfire(),"altfire");
 //		TNT1 AAAAAA 1 A_JumpIf(pressingaltfire(),"swingverti");
@@ -993,7 +993,7 @@ class HDSabre:HDSabreWeapon{
 		goto stylehoriswing;
 	stylehoriswing:
 		#### A 0 A_JumpIfInventory("HDZerk",PBZERK_COOLOFF,"zerkstylehoriswing");
-		SBHW FED 2;
+		SBHW ED 2;
 		#### A 0 A_Overlay(5,"hitcheckhorizontal",false);
 		SBHS A 0 
 		{
@@ -1023,7 +1023,7 @@ class HDSabre:HDSabreWeapon{
 		goto readyend;
 		
 	zerkstylevertiswing:
-		SBVW GHI 2;
+		SBVW HI 2;
 //		TNT1 A 1;
 		#### A 0 A_Overlay(5,"hitcheckzerkvertical",false);
 		SBVS A 0 
@@ -1031,7 +1031,7 @@ class HDSabre:HDSabreWeapon{
 			if(hdplayerpawn(self))hdplayerpawn(self).fatigue+=3;
 			A_StartSound("Sabre/swing",CHAN_7);
 		}
-		SBVS ABCDEFG 1;
+		SBVS ACDEFG 1;
 		TNT1 A 2;
 		//#### A 0 A_JumpIf(pressingaltfire(),"altfire");
 //		TNT1 A 3;
@@ -1041,7 +1041,7 @@ class HDSabre:HDSabreWeapon{
 		TNT1 A 0 A_WeaponBusy;
 		goto zerkstylehoriswing;
 	zerkstylehoriswing:
-		SBHW FED 2;
+		SBHW ED 2;
 //		TNT1 A 1;
 		#### A 0 A_Overlay(5,"hitcheckzerkhorizontal",false);
 		SBHS A 0 
@@ -1070,8 +1070,11 @@ class HDSabre:HDSabreWeapon{
 				return;
 			}
 		}
-		SBSH EDCBA 3;
-		//KRN4 QRSTUV 2;
+		SBS2 ABCD 2;
+		SBSH G 0 A_StartSound("Sabre/Click",CHAN_7);
+		SBSH G 15;
+		SBSH F 0 A_StartSound("Sabre/Sheath",CHAN_7);
+		SBSH FEDCBA 2;
 		TNT1 A 0 {invoker.weaponstatus[KHARON_SHEATHED]=1;}
 	YEET:
 		---- A 1
