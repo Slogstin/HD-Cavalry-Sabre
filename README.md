@@ -5,7 +5,7 @@ This Addon adds a Cavalry Sabre to [Hideous Destructor](https://codeberg.org/mc7
 
 
 # Credits
-Matt for [Hideous Destructor](https://codeberg.org/mc776/HideousDestructor) and the Medikit code that i borrowed for Mealkits.
+Matt for [Hideous Destructor](https://codeberg.org/mc776/HideousDestructor).
 
 [Potetobloke](https://github.com/Potetobloke) for the [Kharon](https://github.com/Potetobloke/PB_HDAddon_Bangers-And-Mash) code i used as a base, the melee hack i was allowed to copy and some sprites/sounds.
 
