@@ -1,0 +1,13 @@
+class VirSabreHandler : EventHandler
+{
+	override void CheckReplacement(ReplaceEvent e)
+	{
+		switch (e.Replacee.GetClassName()) {
+		
+		
+			case 'Lumberjack' :
+				if (!random(0, 4)) {e.Replacement = "HDSabre";}	
+				break;
+			}
+	}
+}

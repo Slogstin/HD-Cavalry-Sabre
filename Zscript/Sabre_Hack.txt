@@ -1,0 +1,155 @@
+const PBZERK_COOLOFF=10500; //for zerk checks
+
+class HDSabreWeapon:HDFist{
+	default{
+		+WEAPON.MELEEWEAPON +WEAPON.NOALERT +WEAPON.NO_AUTO_SWITCH
+		+weapon.cheatnotweapon
+		+forcepain
+		attacksound "*";
+		weapon.bobstyle "Alpha";
+		weapon.slotnumber 9;
+		weapon.bobspeed 2.6;
+		weapon.bobrangex 0.1;
+		weapon.bobrangey 0.5;
+	}
+	
+	override bool AddSpareWeapon(actor newowner){return AddSpareWeaponRegular(newowner);}
+	override hdweapon GetSpareWeapon(actor newowner,bool reverse,bool doselect){return GetSpareWeaponRegular(newowner,reverse,doselect);}
+	
+	override Inventory CreateTossable (int amt)
+	{
+		// If self actor lacks a SpawnState, don't drop it. (e.g. A base weapon
+		// like the fist can't be dropped because you'll never see it.)
+		if (SpawnState == GetDefaultByType("Actor").SpawnState || SpawnState == NULL)
+		{
+			return NULL;
+		}
+		if (bUndroppable || bUntossable || Owner == NULL || Amount <= 0 || amt == 0)
+		{
+			return NULL;
+		}
+		if (Amount == 1 && !bKeepDepleted)
+		{
+			BecomePickup ();
+			DropTime = 30;
+			bSpecial = bSolid = false;
+			return self;
+		}
+		let copy = Inventory(Spawn (GetClass(), Owner.Pos, NO_REPLACE));
+		if (copy != NULL)
+		{
+			amt = clamp(amt, 1, Amount);
+			
+			copy.MaxAmount = MaxAmount;
+			copy.Amount = amt;
+			copy.DropTime = 30;
+			copy.bSpecial = copy.bSolid = false;
+			Amount -= amt;
+		}
+		return copy;
+	}
+	states{
+	}
+}
+
+
+class HDSabrePuff:HDBulletPuff{
+	default{
+		stamina 5;scale 1;
+		hdbulletpuff.scarechance 5;
+	}
+	override void postbeginplay(){
+		super.postbeginplay();
+		if(max(abs(pos.x),abs(pos.y),abs(pos.z))>=32768){destroy();return;}
+		if(!random(0,scarechance)){
+			actor fff=spawn("idledummy",pos,ALLOW_REPLACE);
+			fff.stamina=random(60,120);
+			hdmobai.frighten(fff,256);
+		}
+		//A_StartSound("misc/bullethit",0,0,0.5*stamina*stamina);
+		A_StartSound("Sabre/wall",CHAN_7,0,1.02*stamina*stamina);
+		A_ChangeVelocity(-0.4,0,frandom(0.1,0.4),CVF_RELATIVE);
+		trymove(pos.xy+vel.xy,false);
+		int stm=stamina;
+		// this doesn't actually do anything
+		//fadeafter=frandom(0,1);
+		scale*=frandom(0.9,1.1);
+		for(int i=0;i<stamina;i++){
+			A_SpawnParticle("white",
+				SPF_RELATIVE,70,frandom(4,20)*getdefaultbytype((class<actor>)(missilename)).scale.x,0,
+				frandom(-3,3),frandom(-3,3),frandom(0,4),
+				frandom(-0.4,0.4)*stm,frandom(-0.4,0.4)*stm,frandom(0.4,1.2)*stm,
+				frandom(-0.1,0.1),frandom(-0.1,0.1),-1.
+			);
+
+//			actor ch=spawn(missilename,self.pos,ALLOW_REPLACE);
+//			ch.vel=self.vel+(random(-stm,stm),random(-stm,stm),random(-2,12));
+		}
+	}
+	states{
+	spawn:
+		TNT1 A 1;
+		stop;
+	}
+}
+
+class HDSabreSpark:Actor
+{
+	Default
+	{
+		+NOCLIP
+		+ROLLSPRITE
+		+ROLLCENTER
+		+FORCEXYBILLBOARD
+		+NOGRAVITY
+		+ALLOWPARTICLES
+		+RANDOMIZE
+		+ZDOOMTRANS
+		Mass 1;
+		Radius 1;
+		Height 1;
+		scale 0.9;
+	}
+	States
+	{
+	Spawn:
+		TNT1 A 1 A_StartSound("misc/bullethit");
+		KRP0 ABC 1 Bright;
+	Melee:
+		TNT1 A 1;
+		Stop;
+	}
+}
+
+class HDSabreSparkL:HDSabreSpark
+{
+	States
+	{
+	Spawn:
+		TNT1 A 1 nodelay A_SetRoll(roll+50);
+		KRP0 ABC 1 Bright;
+		stop;
+	}
+}
+
+class HDSabreSparkR:HDSabreSpark
+{
+	States
+	{
+	Spawn:
+		TNT1 A 1 nodelay A_SetRoll(roll-7);
+		KRP0 ABC 1 Bright;
+		stop;
+	}
+}
+
+class HDSabreSparkV:HDSabreSpark
+{
+	States
+	{
+	Spawn:
+		TNT1 A 1 nodelay A_SetRoll(roll+90);
+		KRP0 ABC 1 Bright;
+		stop;
+	}
+}

@@ -1,0 +1,16 @@
+Sabre/Pull "sounds/Sabre/SabPull.ogg"
+Sabre/Sheath "sounds/Sabre/SabSheath.ogg"
+Sabre/Click "sounds/Sabre/SabClick.ogg"
+
+$random Sabre/swing {Sabre/SW1 Sabre/SW2 Sabre/SW3}
+Sabre/SW1 Sounds/Sabre/SabreSwing1.wav
+Sabre/SW2 Sounds/Sabre/SabreSwing2.wav
+Sabre/SW3 Sounds/Sabre/SabreSwing3.wav
+
+$random Sabre/wall {Sabre/WL1 Sabre/WL2}
+Sabre/WL1 Sounds/Sabre/SabreWall1.wav
+Sabre/WL2 Sounds/Sabre/SabreWall2.wav
+
+$random Sabre/flesh {Sabre/Hit1 Sabre/Hit2}
+Sabre/Hit1 Sounds/Sabre/SabreFlesh1.wav
+Sabre/Hit2 Sounds/Sabre/SabreFlesh2.wav

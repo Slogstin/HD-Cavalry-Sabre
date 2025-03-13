@@ -1,0 +1,1135 @@
+//---------------------------------------------
+// This weapon is heavily based on Potetobloke's Kharon.
+// (Thankies Poteto!) 
+// And yes, the states of this thing are a fucking mess.	-Slogstin
+//---------------------------------------------
+
+
+const HDLD_SABRE="CSB";
+
+// Small experiment where the sheath would be a seperate item and you wouldn't
+// be able to put away the sword without it and had to drop it.
+// Ended up with annoyances early on, so i scrapped it. Maybe one day	-Slogstin
+
+/*Class HDSabreSheath:HDMagAmmo{
+	default{
+		tag "Sabre Sheath";
+		inventory.pickupmessage "You picked up a sheath...without the sabre.";
+		hdmagammo.magbulk 10;
+		scale 0.7;
+	}
+	
+	override void GetItemsThatUseThis(){
+		itemsthatusethis.push("HDSabre");}
+		
+	states{
+	spawn:
+		SBRP C -1;
+		stop;
+	}
+}*/
+
+class HDSabre:HDSabreWeapon{
+	int targettimer;
+	int targethealth;
+	int targetspawnhealth;
+	bool flicked;
+	bool washolding;
+	
+	bool swung;
+	default{
+		//$Category "Weapons/Hideous Destructor"
+		//$Title "Fire Axe"
+		//$Sprite "FAXPA0"
+		+WEAPON.MELEEWEAPON +WEAPON.NOALERT +WEAPON.NO_AUTO_SWITCH
+		+hdweapon.fitsinbackpack
+		//-hdweapon.dontnull
+		-weapon.cheatnotweapon
+		-nointeraction
+		-inventory.untossable
+		+forcepain
+		+forceXYbillboard
+		+rollsprite
+		+rollcenter
+		inventory.pickupmessage "You got the Sabre! Cavalry, Chaaaaarge!";
+		obituary "%o got charged by %k.";
+		attacksound "Sabre/wall";
+		weapon.selectionorder 200;
+		weapon.slotpriority 0.75;
+		weapon.kickback 15;
+		weapon.bobstyle "Alpha";
+		weapon.bobspeed 2.6;
+		weapon.bobrangex 0.2;
+		weapon.bobrangey 0.5;
+		weapon.slotnumber 1;
+		DamageFunction (random(40,45));
+		scale 0.7;
+		tag "Cavalry Sabre";
+		hdweapon.refid HDLD_SABRE;
+		//hdweapon.barrelsize 21,3,1;
+	}
+	override bool AddSpareWeapon(actor newowner){return AddSpareWeaponRegular(newowner);}
+	override hdweapon GetSpareWeapon(actor newowner,bool reverse,bool doselect){return GetSpareWeaponRegular(newowner,reverse);}
+	override void DrawHUDStuff(HDStatusBar sb,HDWeapon hdw,HDPlayerPawn hpl){
+		let ww=HDSabre(hdw);
+		if(ww.targethealth)sb.drawwepnum(ww.targethealth,ww.targetspawnhealth);
+	}
+	
+	//for throwing a weapon
+	override inventory CreateTossable(int amt){
+		let onr=hdplayerpawn(owner);
+		bool throw=(
+			onr
+			&&onr.player
+			&&onr.player.cmd.buttons&BT_ZOOM
+		);
+		bool isreadyweapon=onr&&onr.player&&onr.player.readyweapon==self;
+		if(!isreadyweapon)throw=false;
+		let thrown=super.createtossable(amt);
+		if(!thrown)return null;
+		let newwep=GetSpareWeapon(onr,doselect:isreadyweapon);
+		hdweapon(thrown).bjustchucked=true;
+		thrown.target=onr;
+		thrown.lastenemy=onr;
+		if(throw){
+			thrown.bmissile=true;
+			thrown.bBOUNCEONWALLS=true;
+			thrown.bBOUNCEONFLOORS=true;
+			thrown.bALLOWBOUNCEONACTORS=true;
+			thrown.bBOUNCEAUTOOFF=true;
+		}else{
+			thrown.bmissile=false;
+			thrown.bBOUNCEONWALLS=false;
+			thrown.bBOUNCEONFLOORS=false;
+			thrown.bALLOWBOUNCEONACTORS=false;
+			thrown.bBOUNCEAUTOOFF=false;
+		}
+		return thrown;
+	}
+	//an override is needed because DropInventory will undo anything done in CreateTossable
+	double throwvel;
+	override void OnDrop(Actor dropper){
+		if(bjustchucked&&target){
+			double cp=cos(target.pitch);
+			if(bmissile){
+				vel=target.vel+
+					(cp*(cos(target.angle),sin(target.angle)),-sin(target.pitch))
+					*min(20,800/weaponbulk())
+					*(hdplayerpawn(target)?hdplayerpawn(target).strength:1.)
+				;
+			}else vel=target.vel+(cp*(cos(target.angle),sin(target.angle)),-sin(target.pitch))*4;
+			throwvel=vel dot vel;
+			bjustchucked=false;
+		}
+
+		//copypasted from HDPickup
+		if(dropper){
+			setz(dropper.pos.z+dropper.height*0.8);
+			if(!bmissile){
+				double dp=max(dropper.pitch-6,-90);
+				vel=dropper.vel+(
+					cos(dp)*(cos(dropper.angle),sin(dropper.angle)),
+					-sin(dp)
+				)*3;
+			}
+			HDBackpack.ForceUpdate(dropper);
+		}
+	}
+
+
+// Another leftover from the seperate Sheathe thing. Just keeping it here.
+// Ended up making a pickup sprite for the sword without the Sheath on, but oh well.	-Slogstin
+/*	override string,double getpickupsprite(){
+		if (weaponstatus[KHARON_SHEATHED]==1){return "SBRPA0",1.;}
+		else {return "SBRPB0",1.;}
+	}*/
+	override string,double getpickupsprite(){return "SBRPA0",1.;}
+	
+	override string gethelptext(){
+		return
+		WEPHELP_FIRE.."  Vertical Swing\n"
+		..WEPHELP_ALTFIRE.."   Horizontal Swing\n"
+		..WEPHELP_RELOAD.."   Sheathe/Withdraw Attack\n"
+		..WEPHELP_FIREMODE.."	Thrust attack\n"
+		..WEPHELP_ALTRELOAD.."	Special Sheathe\n"
+		..WEPHELP_UNLOAD.."   Throw\n"
+		;
+	}
+	
+	override void DoEffect(){
+		super.DoEffect();
+		if(targettimer<70)targettimer++;else{
+			tracer=null;
+			targettimer=0;
+			targethealth=0;
+		}
+	}
+	
+	action void HDVerticalSliceSabre(double dmg, int pb_angle=0, int pb_rotation=0,
+							int pb_pitch=0,class<Actor> pb_pufftype="HDSabreSparkL"){
+		flinetracedata punchline;
+		bool punchy=linetrace(
+			angle+pb_angle,70,pitch+pb_pitch,
+			TRF_NOSKY,
+			offsetz:height-12,
+			data:punchline
+		);
+		
+		//actual puff effect if the shot connects
+		/*LineAttack(angle+pb_angle,pb_range,pitch+pb_pitch,punchline.hitline?(countinv("HDZerk")>PBZERK_COOLOFF?random(50,120):random(5,15)):0,"none",
+			countinv("HDZerk")>PBZERK_COOLOFF?"WallChunker":"WallChunker",
+			flags:LAF_NORANDOMPUFFZ|LAF_OVERRIDEZ,
+			offsetz:height-12);
+			
+		LineAttack(angle+pb_angle,pb_range,pitch+pb_pitch,punchline.hitline?(countinv("HDZerk")>PBZERK_COOLOFF?random(50,120):random(5,15)):0,"none",
+			countinv("HDZerk")>PBZERK_COOLOFF?"HDSmokeChunk":"BulletPuffSmall",
+			flags:LAF_NORANDOMPUFFZ|LAF_OVERRIDEZ,
+			offsetz:height-12);*/
+		
+		LineAttack(angle+pb_angle,75,pitch+pb_pitch,punchline.hitline?(countinv("HDZerk")>PBZERK_COOLOFF?random(50,120):random(5,15)):0,"none",
+			pb_pufftype,
+			flags:LAF_NORANDOMPUFFZ|LAF_OVERRIDEZ,
+			offsetz:height-12
+		);
+		
+		//pb_pufftype.roll=45;
+		
+		LineAttack(angle+pb_angle,75,pitch+pb_pitch,punchline.hitline?(countinv("HDZerk")>PBZERK_COOLOFF?random(50,120):random(5,15)):0,"none",
+			"HDSabrePuff",
+			flags:LAF_NORANDOMPUFFZ|LAF_OVERRIDEZ,
+			offsetz:height-12
+			
+		);
+		
+		//setweaponstate("IGOTEM",5);
+
+		if(!punchline.hitactor){
+			HDF.Give(self,"WallChunkAmmo",1);
+			return;
+		}
+		actor punchee=punchline.hitactor;
+
+		//charge!
+		if(invoker.flicked)dmg*=1.5;
+		else{
+			double twe=0;
+			if(!!punchee)twe=HDMath.TowardsEachOther(self,punchee);
+			else twe=(punchline.hitlocation-pos).length()-(punchline.hitlocation-(pos+vel)).length();
+			dmg+=twe*6;
+		}
+
+		//come in swinging
+		let onr=hdplayerpawn(self);
+		double ptch=0.;
+		double pyaw=0.;
+		if(onr){
+			ptch=deltaangle(onr.lastpitch,onr.pitch);
+			pyaw=deltaangle(onr.lastangle,onr.angle);
+			double iy=(-ptch - pyaw);
+
+			if(player.onground)dmg+=min(abs(iy)*5,dmg*3);
+		}
+
+		//shit happens
+		//dmg*=frandom(0.85,1.5);
+		HDBleedingWound.inflict(punchee,int(dmg*frandom(0.85,1.5)),8);
+
+
+		//other effects
+		if(
+			onr
+			&&!punchee.bdontthrust
+			&&(
+				punchee.mass<200
+				||(
+					punchee.radius*2<punchee.height
+					&& punchline.hitlocation.z>punchee.pos.z+punchee.height*0.6
+				)
+			)
+		){
+			double iyaw=player.cmd.yaw*(65535./360.);
+			if(abs(iyaw)>(0.5)){
+				punchee.A_SetAngle(punchee.angle-iyaw*100,SPF_INTERPOLATE);
+			}
+			double ipitch=player.cmd.pitch*(65535./360.);
+			if(abs(ipitch)>(0.5*65535/360)){
+				punchee.A_SetPitch(punchee.angle+ipitch*100,SPF_INTERPOLATE);
+			}
+		}
+		//headshot lol
+		if(
+			!punchee.bnopain
+			&&punchee.health>0
+			&&!(punchee is "HDBarrel")
+			&&punchline.hitlocation.z>punchee.pos.z+punchee.height*0.75
+		){
+			if(hd_debug)A_Log("HEAD SHOT");
+			punchee.InStateSequence(curstate,resolvestate("falldown"));
+			dmg*=frandom(1.8,2.1);
+		}
+
+		if(hd_debug){
+			string pch="";
+			if(punchee.player)pch=punchee.player.getusername();
+				else pch=punchee.getclassname();
+			A_Log(string.format("Hit %s for %i damage!",pch,dmg));
+		}
+		
+		
+		//hit sound
+		if(punchee.bnoblood)
+		{
+		if(dmg*2>punchee.health)punchee.A_StartSound("Sabre/wall",CHAN_BODY,0,1.25);
+		}
+		else 
+		{
+		punchee.A_StartSound("Sabre/flesh",CHAN_BODY,0,0.5);
+		if(dmg*2>punchee.health)punchee.A_StartSound("Sabre/flesh",CHAN_7,0,1);
+		//if(dmg*2>punchee.health)punchee.A_StartSound("weapons/kharonsplat",CHAN_6,0,1);
+		}
+		
+		hdmobbase.forcepain(punchee);
+		punchee.InStateSequence(curstate,resolvestate("falldown"));
+		//punchee.InStateSequence(curstate,resolvestate("falldown"));
+		
+		if(punchee.health>0)punchee.damagemobj(self,self,int(dmg),"SmallArms3");
+		//else HDF.Give(punchee,"SawGib",dmg*0.2);
+		
+		LineAttack(angle,70,pitch,punchline.hitline?(countinv("HDZerk")>PBZERK_COOLOFF?random(50,120):random(5,15)):0,"none",
+			pb_pufftype,
+			flags:LAF_NORANDOMPUFFZ|LAF_OVERRIDEZ,
+			offsetz:height-12);
+
+		if(!punchee)invoker.targethealth=0;else{
+			invoker.targethealth=punchee.health;
+			invoker.targetspawnhealth=punchee.spawnhealth();
+			invoker.targettimer=0;
+		}
+	}
+	
+		action void HDHorizontalSliceSabre(double dmg, int pb_angle=0, int pb_rotation=0,
+							int pb_pitch=0,class<Actor> pb_pufftype="HDSabreSpark"){
+		flinetracedata punchline;
+		bool punchy=linetrace(
+			angle+pb_angle,70,pitch+pb_pitch,
+			TRF_NOSKY,
+			offsetz:height-12,
+			data:punchline
+		);
+		
+		//actual puff effect if the shot connects
+		/*LineAttack(angle+pb_angle,pb_range,pitch+pb_pitch,punchline.hitline?(countinv("HDZerk")>PBZERK_COOLOFF?random(50,120):random(5,15)):0,"none",
+			countinv("HDZerk")>PBZERK_COOLOFF?"WallChunker":"WallChunker",
+			flags:LAF_NORANDOMPUFFZ|LAF_OVERRIDEZ,
+			offsetz:height-12);
+			
+		LineAttack(angle+pb_angle,pb_range,pitch+pb_pitch,punchline.hitline?(countinv("HDZerk")>PBZERK_COOLOFF?random(50,120):random(5,15)):0,"none",
+			countinv("HDZerk")>PBZERK_COOLOFF?"HDSmokeChunk":"BulletPuffSmall",
+			flags:LAF_NORANDOMPUFFZ|LAF_OVERRIDEZ,
+			offsetz:height-12);*/
+		
+		LineAttack(angle+pb_angle,75,pitch+pb_pitch,punchline.hitline?(countinv("HDZerk")>PBZERK_COOLOFF?random(50,120):random(5,15)):0,"none",
+			pb_pufftype,
+			flags:LAF_NORANDOMPUFFZ|LAF_OVERRIDEZ,
+			offsetz:height-12
+		);
+		
+		//pb_pufftype.roll=45;
+		
+		LineAttack(angle+pb_angle,75,pitch+pb_pitch,punchline.hitline?(countinv("HDZerk")>PBZERK_COOLOFF?random(50,120):random(5,15)):0,"none",
+			"HDSabrePuff",
+			flags:LAF_NORANDOMPUFFZ|LAF_OVERRIDEZ,
+			offsetz:height-12
+			
+		);
+		
+		//setweaponstate("IGOTEM",5);
+
+		if(!punchline.hitactor){
+			HDF.Give(self,"WallChunkAmmo",1);
+			return;
+		}
+		actor punchee=punchline.hitactor;
+
+		//charge!
+		if(invoker.flicked)dmg*=1.5;
+		else{
+			double twe=0;
+			if(!!punchee)twe=HDMath.TowardsEachOther(self,punchee);
+			else twe=(punchline.hitlocation-pos).length()-(punchline.hitlocation-(pos+vel)).length();
+			dmg+=twe*6;
+		}
+
+		//come in swinging
+		let onr=hdplayerpawn(self);
+		double ptch=0.;
+		double pyaw=0.;
+		if(onr){
+			ptch=deltaangle(onr.lastpitch,onr.pitch)*0.1;
+			pyaw=deltaangle(onr.lastangle,onr.angle)*1.5;
+			double iy=abs(pyaw);
+
+			if(player.onground)dmg+=min(abs(iy)*5,dmg*3);
+		}
+
+		//shit happens
+		//dmg*=frandom(0.85,1.5);
+		HDBleedingWound.inflict(punchee,int(dmg*frandom(0.85,1.5)),8);
+
+
+		//other effects
+		if(
+			onr
+			&&!punchee.bdontthrust
+			&&(
+				punchee.mass<200
+				||(
+					punchee.radius*2<punchee.height
+					&& punchline.hitlocation.z>punchee.pos.z+punchee.height*0.6
+				)
+			)
+		){
+			double iyaw=player.cmd.yaw*(65535./360.);
+			if(abs(iyaw)>(0.5)){
+				punchee.A_SetAngle(punchee.angle-iyaw*100,SPF_INTERPOLATE);
+			}
+			double ipitch=player.cmd.pitch*(65535./360.);
+			if(abs(ipitch)>(0.5*65535/360)){
+				punchee.A_SetPitch(punchee.angle+ipitch*100,SPF_INTERPOLATE);
+			}
+		}
+		//headshot lol
+		if(
+			!punchee.bnopain
+			&&punchee.health>0
+			&&!(punchee is "HDBarrel")
+			&&punchline.hitlocation.z>punchee.pos.z+punchee.height*0.75
+		){
+			if(hd_debug)A_Log("HEAD SHOT");
+			punchee.InStateSequence(curstate,resolvestate("falldown"));
+			dmg*=frandom(1.8,2.1);
+		}
+
+		if(hd_debug){
+			string pch="";
+			if(punchee.player)pch=punchee.player.getusername();
+				else pch=punchee.getclassname();
+			A_Log(string.format("Hit %s for %i damage!",pch,dmg));
+		}
+		
+		
+		//hit sound
+		if(punchee.bnoblood)
+		{
+		if(dmg*2>punchee.health)punchee.A_StartSound("Sabre/wall",CHAN_BODY,0,1.25);
+		}
+		else 
+		{
+		punchee.A_StartSound("Sabre/flesh",CHAN_BODY,0,0.5);
+		if(dmg*2>punchee.health)punchee.A_StartSound("Sabre/flesh",CHAN_7,0,1);
+		//if(dmg*2>punchee.health)punchee.A_StartSound("weapons/kharonsplat",CHAN_6,0,1);
+		}
+		
+		hdmobbase.forcepain(punchee);
+		punchee.InStateSequence(curstate,resolvestate("falldown"));
+		//punchee.InStateSequence(curstate,resolvestate("falldown"));
+		
+		if(punchee.health>0)punchee.damagemobj(self,self,int(dmg),"SmallArms3");
+		//else HDF.Give(punchee,"SawGib",dmg*0.2);
+		
+		LineAttack(angle,70,pitch,punchline.hitline?(countinv("HDZerk")>PBZERK_COOLOFF?random(50,120):random(5,15)):0,"none",
+			pb_pufftype,
+			flags:LAF_NORANDOMPUFFZ|LAF_OVERRIDEZ,
+			offsetz:height-12);
+
+		if(!punchee)invoker.targethealth=0;else{
+			invoker.targethealth=punchee.health;
+			invoker.targetspawnhealth=punchee.spawnhealth();
+			invoker.targettimer=0;
+		}
+	}
+	
+	action void HDStabSabre(double dmg, int pb_angle=0, int pb_rotation=0,
+							int pb_pitch=0,class<Actor> pb_pufftype="HDSabreSpark"){
+		flinetracedata punchline;
+		bool punchy=linetrace(
+			angle+pb_angle,85,pitch+pb_pitch,
+			TRF_NOSKY,
+			offsetz:height-12,
+			data:punchline
+		);
+		
+		A_StartSound("misc/fwoosh",CHAN_WEAPON,CHANF_OVERLAP,volume:0.02,pitch:1.5);
+		
+		//actual puff effect if the shot connects
+		/*LineAttack(angle+pb_angle,pb_range,pitch+pb_pitch,punchline.hitline?(countinv("HDZerk")>PBZERK_COOLOFF?random(50,120):random(5,15)):0,"none",
+			countinv("HDZerk")>PBZERK_COOLOFF?"WallChunker":"WallChunker",
+			flags:LAF_NORANDOMPUFFZ|LAF_OVERRIDEZ,
+			offsetz:height-12);
+			
+		LineAttack(angle+pb_angle,pb_range,pitch+pb_pitch,punchline.hitline?(countinv("HDZerk")>PBZERK_COOLOFF?random(50,120):random(5,15)):0,"none",
+			countinv("HDZerk")>PBZERK_COOLOFF?"HDSmokeChunk":"BulletPuffSmall",
+			flags:LAF_NORANDOMPUFFZ|LAF_OVERRIDEZ,
+			offsetz:height-12);*/
+		
+		LineAttack(angle+pb_angle,75,pitch+pb_pitch,punchline.hitline?(countinv("HDZerk")>PBZERK_COOLOFF?random(50,120):random(5,15)):0,"none",
+			pb_pufftype,
+			flags:LAF_NORANDOMPUFFZ|LAF_OVERRIDEZ,
+			offsetz:height-12
+		);
+		
+		//pb_pufftype.roll=45;
+		
+		LineAttack(angle+pb_angle,75,pitch+pb_pitch,punchline.hitline?(countinv("HDZerk")>PBZERK_COOLOFF?random(50,120):random(5,15)):0,"none",
+			"HDSabrePuff",
+			flags:LAF_NORANDOMPUFFZ|LAF_OVERRIDEZ,
+			offsetz:height-12
+			
+		);
+		
+		//setweaponstate("IGOTEM",5);
+
+		if(!punchline.hitactor){
+			HDF.Give(self,"WallChunkAmmo",1);
+			return;
+		}
+		actor punchee=punchline.hitactor;
+
+		//charge!
+		if(invoker.flicked)dmg*=1.5;
+		else{
+			double twe=0;
+			if(!!punchee)twe=HDMath.TowardsEachOther(self,punchee);
+			else twe=(punchline.hitlocation-pos).length()-(punchline.hitlocation-(pos+vel)).length();
+			dmg+=twe*3;
+		}
+
+		//come in swinging
+		let onr=hdplayerpawn(self);
+		double ptch=0.;
+		double pyaw=0.;
+		if(onr){
+			ptch=deltaangle(onr.lastpitch,onr.pitch);
+			pyaw=deltaangle(onr.lastangle,onr.angle);
+			double iy=abs(ptch);
+
+			if(player.onground)dmg+=min(abs(iy)*5,dmg*3);
+		}
+
+		//shit happens
+		//dmg*=frandom(0.85,1.5);
+		HDBleedingWound.inflict(punchee,int(dmg*frandom(0.85,1.5)),18);
+
+
+		//other effects
+		if(
+			onr
+			&&!punchee.bdontthrust
+			&&(
+				punchee.mass<200
+				||(
+					punchee.radius*2<punchee.height
+					&& punchline.hitlocation.z>punchee.pos.z+punchee.height*0.6
+				)
+			)
+		){
+			double iyaw=player.cmd.yaw*(65535./360.);
+			if(abs(iyaw)>(0.5)){
+				punchee.A_SetAngle(punchee.angle-iyaw*100,SPF_INTERPOLATE);
+			}
+			double ipitch=player.cmd.pitch*(65535./360.);
+			if(abs(ipitch)>(0.5*65535/360)){
+				punchee.A_SetPitch(punchee.angle+ipitch*100,SPF_INTERPOLATE);
+			}
+		}
+		//headshot lol
+		if(
+			!punchee.bnopain
+			&&punchee.health>0
+			&&!(punchee is "HDBarrel")
+			&&punchline.hitlocation.z>punchee.pos.z+punchee.height*0.75
+		){
+			if(hd_debug)A_Log("HEAD SHOT");
+			punchee.InStateSequence(curstate,resolvestate("falldown"));
+			dmg*=frandom(1.8,2.1);
+		}
+
+		if(hd_debug){
+			string pch="";
+			if(punchee.player)pch=punchee.player.getusername();
+				else pch=punchee.getclassname();
+			A_Log(string.format("Hit %s for %i damage!",pch,dmg));
+		}
+		
+		
+		//hit sound
+		if(punchee.bnoblood)
+		{
+		if(dmg*2>punchee.health)punchee.A_StartSound("Sabre/wall",CHAN_BODY,0,1.25);
+		}
+		else 
+		{
+		punchee.A_StartSound("Sabre/flesh",CHAN_BODY,0,0.5);
+		if(dmg*2>punchee.health)punchee.A_StartSound("Sabre/flesh",CHAN_7,0,1);
+		//if(dmg*2>punchee.health)punchee.A_StartSound("weapons/kharonsplat",CHAN_6,0,1);
+		}
+		
+		hdmobbase.forcepain(punchee);
+		punchee.InStateSequence(curstate,resolvestate("falldown"));
+		//punchee.InStateSequence(curstate,resolvestate("falldown"));
+		
+		if(punchee.health>0)punchee.damagemobj(self,self,int(dmg),"SmallArms3");
+		//else HDF.Give(punchee,"SawGib",dmg*0.2);
+		
+		LineAttack(angle,70,pitch,punchline.hitline?(countinv("HDZerk")>PBZERK_COOLOFF?random(50,120):random(5,15)):0,"none",
+			pb_pufftype,
+			flags:LAF_NORANDOMPUFFZ|LAF_OVERRIDEZ,
+			offsetz:height-12);
+
+		if(!punchee)invoker.targethealth=0;else{
+			invoker.targethealth=punchee.health;
+			invoker.targetspawnhealth=punchee.spawnhealth();
+			invoker.targettimer=0;
+		}
+	}
+	
+	action void A_Lunge(){
+	hdplayerpawn hdp=hdplayerpawn(self);
+	if(hdp){
+		if(hdp.fatigue>=30){setweaponstate("hold");return;}
+		else hdp.fatigue+=3;
+	}
+	A_Recoil(min(hdp.overloaded*0.6,4.)-4.);
+	}
+	
+	override double weaponbulk(){
+		return 85;
+	}
+	override double gunmass(){
+		return 15;
+	}
+	
+	states{
+	select0:
+		TNT1 A 1 {invoker.weaponstatus[KHARON_SHEATHED]=1;}
+//		SBRD A 0 A_JumpIf(!invoker.weaponstatus[KHARON_SHEATHED]==1,2);
+		SBSH A 0{
+		if(invoker.weaponstatus[KHARON_SHEATHED]==1){
+				setweaponstate("select0small");
+				return;
+			}
+		}
+//		SBVR ABCD 2;
+		#### # 0;
+		goto select0small;
+	deselect0:
+	sheath_deselect:
+		SBSH K 0{
+		if(invoker.weaponstatus[KHARON_SHEATHED]==1){
+				setweaponstate("deselect_s");
+				return;
+			}
+		}
+		SBS2 ABCD 2;
+		SBSH G 0 A_StartSound("Sabre/Click",CHAN_7);
+		SBSH G 15;
+		SBSH F 0 A_StartSound("Sabre/Sheath",CHAN_7);
+		SBSH FEDCBA 2;
+		TNT1 A 0 {invoker.weaponstatus[KHARON_SHEATHED]=1;}
+	deselectfull:
+		SBSH A 0;
+		goto deselect0small;
+	deselect_s:
+		SBSH A 0;
+		goto deselect0small;
+		
+		
+	ready:
+		TNT1 A 0;
+		TNT1 A 0
+		{
+		if(invoker.weaponstatus[KHARON_SHEATHED]==0){
+				setweaponstate("fullready");
+				return;
+			}
+		}
+	    goto readysheathed;
+	unsheath_fr:
+		SBSH AB 3;
+		SBSH C 15;
+		SBSH C 0 A_StartSound("Sabre/Pull",CHAN_7);
+		SBSH DEFGHIJK 2;
+		SBHR ABCD 2;
+	unsheath:
+		TNT1 A 0 {invoker.weaponstatus[KHARON_SHEATHED]=0;}
+		SBSH AB 3;
+		SBSH C 8;
+		SBSH C 0 A_StartSound("Sabre/Pull",CHAN_7);
+		SBSH DEFGHIJK 2;
+		TNT1 A 8;
+		SBHR ABCD 2;
+		SBRD A 2;
+	fullready:
+		SBRD A 1{
+			if(invoker.washolding&&pressingfire()){
+				setweaponstate("nope");
+				return;
+			}
+			A_WeaponReady(WRF_ALL);
+			invoker.flicked=false;
+			invoker.washolding=false;
+		}goto readyend;
+	readysheathed:
+		SBSH A 1{
+			if(invoker.washolding&&pressingfire()){
+				setweaponstate("nope");
+				return;
+			}
+			A_WeaponReady(WRF_ALL|WRF_NOSECONDARY);
+			invoker.flicked=false;
+			invoker.washolding=false;
+		}goto readyend;
+	reload:
+		TNT1 A 0
+		{
+		if(invoker.weaponstatus[KHARON_SHEATHED]==1){
+				setweaponstate("unsheath");
+				return;
+			}
+		}
+		SBS2 ABCD 2;
+//		SBSH KJIH 2;
+		SBSH G 0 A_StartSound("Sabre/Click",CHAN_7);
+		SBSH G 15;
+		SBSH F 0 A_StartSound("Sabre/Sheath",CHAN_7);
+		SBSH FEDCBA 2;
+		---- A 0 {invoker.weaponstatus[KHARON_SHEATHED]=1;}
+		SBSH A 2;
+		goto readyend;
+	fire:
+		SBVW A 0
+		{
+		if(invoker.weaponstatus[KHARON_SHEATHED]==1){
+				setweaponstate("unsheath");
+				return;
+			}
+		}	
+	firehold:
+		TNT1 A 0;
+//		KRN5 BCD 2;
+	startverti:
+		#### A 0 A_JumpIfInventory("HDZerk",PBZERK_COOLOFF,"zerkvertistart");
+		SBVW A 0 A_StartSound("weapons/pocket",CHAN_6);
+		SBVW ABCDEF 2;
+//		SBVW C 0 A_WeaponBusy;
+		goto holdverti;
+	zerkvertistart:
+		SBVW A 0 A_StartSound("weapons/pocket",CHAN_6);
+		SBVW ABCDEF 1;
+//		SBVW C 0 A_WeaponBusy;
+		goto holdverti;
+	holdverti:
+		SBVW F 1; //A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH);
+		#### A 0 A_JumpIf(pressingreload(),"VertiSwingWithdraw");
+		TNT1 A 0 A_ReFire("holdverti");
+	goto vertiswinghard;
+	vertiswingreturn:
+		TNT1 A 3;
+		TNT1 A 2 A_StartSound("weapons/pocket",CHAN_6);
+	goto holdverti;
+	vertiswinghard:
+		#### A 0 A_JumpIfInventory("HDZerk",PBZERK_COOLOFF,"zerkvertiswinghard");
+		SBVW GHI 2;
+		#### A 0 A_Overlay(5,"hitcheckvertical",false);
+		SBVS A 0 
+		{
+			if(hdplayerpawn(self))hdplayerpawn(self).fatigue+=3;
+			A_StartSound("Sabre/swing",CHAN_7);
+		}
+
+		SBVS ABCDEFG 1;
+		TNT1 A 1;
+		//#### A 0 A_JumpIf(pressingaltfire(),"altfire");
+//		TNT1 AAAAAA 1 A_JumpIf(pressingaltfire(),"swingverti");
+//		#### A 0 A_JumpIf(pressingfire(),"swingverti");
+//		#### A 0 A_JumpIf(pressingaltfire(),"HoriSwingHard");
+//		TNT1 A 0 A_ReFire("startfire");
+		TNT1 A 0 A_WeaponBusy;
+		goto vertirecoverswing;
+		
+	swingverti:
+		KRN3 A 0 A_StartSound("Sabre/swing",CHAN_7);
+		KRN1 A 1;
+		KRN1 B 1 HDVerticalSliceSabre(20, 0, 15, 0, pb_pufftype:"HDSabreSparkL");
+		KRN1 C 1
+		{
+			HDVerticalSliceSabre(30, 0, 0, 0, pb_pufftype:"HDSabreSparkL");
+			if(hdplayerpawn(self))hdplayerpawn(self).fatigue+=1;
+		}
+		KRN1 D 1 HDVerticalSliceSabre(20, 0, -15, 0, pb_pufftype:"HDSabreSparkL");
+		KRN1 EF 1;
+		TNT1 A 7;
+		goto vertirecoverswing;
+
+
+	altfire:
+		KRN5 A 0
+		{
+		if(invoker.weaponstatus[KHARON_SHEATHED]==1){
+				setweaponstate("unsheath");
+				return;
+			}
+		}
+	althold:
+		TNT1 A 0;
+//		KRN5 BCD 2;
+	starthori:
+		#### A 0 A_JumpIfInventory("HDZerk",PBZERK_COOLOFF,"zerkhoristart");
+		SBHW A 0 A_StartSound("weapons/pocket",CHAN_6);
+		SBHW ABCDEF 2;
+//		SBHW C 0 A_WeaponBusy;
+		goto holdhori;
+	zerkhoristart:
+		SBHW A 0 A_StartSound("weapons/pocket",CHAN_6);
+		SBHW ABCDEF 1;
+//		SBHW C 0 A_WeaponBusy;
+		goto holdhori;
+	holdhori:
+		SBHW F 1; //A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH);
+		#### A 0 A_JumpIf(pressingreload(),"HoriSwingWithdraw");
+		TNT1 A 0 A_ReFire("holdhori");
+	goto horiswinghard;
+	horiswingreturn:
+		TNT1 A 3;
+		TNT1 A 2 A_StartSound("weapons/pocket",CHAN_6);
+	goto holdhori;
+	horiswinghard:
+		#### A 0 A_JumpIfInventory("HDZerk",PBZERK_COOLOFF,"zerkhoriswinghard");
+		SBHW FED 2;
+		#### A 0 A_Overlay(5,"hitcheckhorizontal",false);
+		SBHS A 0 
+		{
+			if(hdplayerpawn(self))hdplayerpawn(self).fatigue+=3;
+			A_StartSound("Sabre/swing",CHAN_7);
+		}
+		SBHS ABCDEF 1;
+		TNT1 A 2;
+		//#### A 0 A_JumpIf(pressingaltfire(),"altfire");
+//		TNT1 AAAAAA 1 A_JumpIf(pressingfire(),"VertiSwingHard");
+//		#### A 0 A_JumpIf(pressingfire(),"VertiSwingHard");
+//		#### A 0 A_JumpIf(pressingaltfire(),"VertiSwingHard");
+//		TNT1 A 0 A_ReFire("startfire");
+		TNT1 A 0 A_WeaponBusy;
+		goto horirecoverswing;
+		
+	swinghori:
+		KRN3 A 0 A_StartSound("Sabre/swing",CHAN_7);
+		KRN2 A 1;
+		KRN2 B 1 HDHorizontalSliceSabre(20,0, 0, 10, pb_pufftype:"HDSabreSparkR");
+		KRN2 C 1
+		{
+			HDHorizontalSliceSabre(30,0, 0, 0, pb_pufftype:"HDSabreSparkR");
+			if(hdplayerpawn(self))hdplayerpawn(self).fatigue+=1;
+		}
+		KRN2 D 1 HDHorizontalSliceSabre(20, 0, 0, -10,pb_pufftype:"HDSabreSparkR");
+		KRN2 EF 1;
+		TNT1 A 7;
+		goto horirecoverswing;
+		
+	Vertirecoverswing:
+//		TNT1 A 0 A_JumpIf(pressingaltfire(),"horiswinghard");
+		TNT1 A 12{
+		if(invoker.pressingaltfire()){
+				setweaponstate("horiswinghard");
+			}
+		else if(invoker.pressingaltreload()){
+				setweaponstate("stylehoriswing");
+			}
+		}
+		SBVR ABCD 2;
+//		#### A 0 A_JumpIf(pressingfire(),"nope");
+		goto readyend;
+	Horirecoverswing:
+//		TNT1 A 0 A_JumpIf(pressingaltfire(),"vertiswinghard");
+		TNT1 A 12{
+		if(invoker.pressingfire()){
+				setweaponstate("vertiswinghard");
+			}
+		else if(invoker.pressingaltreload()){
+				setweaponstate("stylesheath");
+			}
+		}
+		SBHR ABCD 2;
+//		#### A 0 A_JumpIf(pressingfire(),"nope");
+		goto readyend;
+	
+	VertiSwingWithdraw:
+		SBVW FEDCBA 2;
+		SBVW A 2;
+		goto nope;
+	HoriSwingWithdraw:
+		SBHW FEDCBA 2;
+		SBHW A 2;
+		goto nope;
+		
+	zerkvertiswinghard:
+		SBVW GHI 2;
+//		TNT1 A 1;
+		#### A 0 A_Overlay(5,"hitcheckzerkvertical",false);
+		SBVS A 0 
+		{
+			if(hdplayerpawn(self))hdplayerpawn(self).fatigue+=3;
+			A_StartSound("Sabre/swing",CHAN_7);
+		}
+		SBVS ABCDEFG 1;
+		TNT1 A 2;
+		//#### A 0 A_JumpIf(pressingaltfire(),"altfire");
+//		TNT1 A 3;
+//		#### A 0 A_JumpIf(pressingfire(),"swingreturn");
+//		#### A 0 A_JumpIf(pressingaltfire(),"startfire");
+//		TNT1 A 0 A_ReFire("startfire");
+		TNT1 A 0 A_WeaponBusy;
+		goto vertirecoverswing;
+		
+	zerkhoriswinghard:
+		SBHW FED 2;
+//		TNT1 A 1;
+		#### A 0 A_Overlay(5,"hitcheckzerkhorizontal",false);
+		SBHS A 0 
+		{
+			if(hdplayerpawn(self))hdplayerpawn(self).fatigue+=3;
+			A_StartSound("Sabre/swing",CHAN_7);
+		}
+		SBHS ABCDEF 1;
+		TNT1 A 2;
+		//#### A 0 A_JumpIf(pressingaltfire(),"altfire");
+//		TNT1 A 3;
+//		#### A 0 A_JumpIf(pressingfire(),"swingreturn");
+//		#### A 0 A_JumpIf(pressingaltfire(),"startfire");
+//		TNT1 A 0 A_ReFire("startfire");
+		TNT1 A 0 A_WeaponBusy;
+		goto horirecoverswing;
+		
+	firemode:
+	lungecheck:
+		KRN5 A 0
+		{
+		if(invoker.weaponstatus[KHARON_SHEATHED]==1){
+				setweaponstate("unsheath");
+				return;
+			}
+		}
+	lunge:
+		TNT1 A 0 A_Lunge();
+		TNT1 AA 0{
+			if(countinv("HDZerk")>PBZERK_COOLOFF)A_Recoil(-random(6,8));
+		}
+		TNT1 A 0 A_Recoil(-4);
+	stab:
+//		SBST A 0 A_JumpIfInventory("HDZerk",PBZERK_COOLOFF,"zerkstab");
+		SBST AB 2;
+		SBST A 0 HDStabSabre(40,0,0,2,"HDSabreSparkV");
+		SBST C 7;
+//		goto stabrecoverswing;
+	stabrecoverswing:
+		SBST BA 2;
+//		#### A 0 A_JumpIf(pressingfire(),"nope");
+		goto readyend;
+
+
+// For whatever reason Zerk stabs just make the weapon disappear from your hand and
+// you have to drop it to fix it.
+// I assume it just goes to some non-existant state, but i just can't figure it out.
+// Maybe i'm blind.		-Slogstin
+/*	zerkstab:
+		SBST AV 2;
+		#### A 0 A_Overlay(1,"stabcheckzerk",false);
+//		SBST A 0 HDStabSabre(15,0,0,2,"HDSabreSparkV");
+		SBST C 7;
+		goto stabrecoverswing;*/
+
+
+//////////////////////
+//	Fancy Sheathing	//
+//////////////////////
+	altreload:
+	stylecheck:
+		TNT1 A 0
+		{
+		if(invoker.weaponstatus[KHARON_SHEATHED]==1){
+				setweaponstate("unsheath");
+				return;
+			}
+		}
+	startstyle:
+		#### A 0 A_JumpIfInventory("HDZerk",PBZERK_COOLOFF,"zerkstylestart");
+		SBVW A 0 A_StartSound("weapons/pocket",CHAN_6);
+		SBVW ABCDEF 2;
+		SBVW C 0 A_WeaponBusy;
+		goto stylevertiswing;
+	zerkstylestart:
+		SBVW A 0 A_StartSound("weapons/pocket",CHAN_6);
+		SBVW ABCDEF 1;
+		SBVW C 0 A_WeaponBusy;
+		goto stylevertiswing;
+	stylevertiswing:
+		#### A 0 A_JumpIfInventory("HDZerk",PBZERK_COOLOFF,"zerkstylevertiswing");
+		SBVW GHI 2;
+		#### A 0 A_Overlay(5,"hitcheckvertical",false);
+		SBVS A 0 
+		{
+			if(hdplayerpawn(self))hdplayerpawn(self).fatigue+=3;
+			A_StartSound("Sabre/swing",CHAN_7);
+		}
+
+		SBVS ABCDEFG 1;
+		TNT1 A 1;
+		//#### A 0 A_JumpIf(pressingaltfire(),"altfire");
+//		TNT1 AAAAAA 1 A_JumpIf(pressingaltfire(),"swingverti");
+//		#### A 0 A_JumpIf(pressingfire(),"swingverti");
+//		#### A 0 A_JumpIf(pressingaltfire(),"HoriSwingHard");
+//		TNT1 A 0 A_ReFire("startfire");
+		TNT1 A 0 A_WeaponBusy;
+		goto stylehoriswing;
+	stylehoriswing:
+		#### A 0 A_JumpIfInventory("HDZerk",PBZERK_COOLOFF,"zerkstylehoriswing");
+		SBHW FED 2;
+		#### A 0 A_Overlay(5,"hitcheckhorizontal",false);
+		SBHS A 0 
+		{
+			if(hdplayerpawn(self))hdplayerpawn(self).fatigue+=3;
+			A_StartSound("Sabre/swing",CHAN_7);
+		}
+		SBHS ABCDEF 1;
+		SBHS F 9;
+		//#### A 0 A_JumpIf(pressingaltfire(),"altfire");
+//		TNT1 AAAAAA 1 A_JumpIf(pressingfire(),"VertiSwingHard");
+//		#### A 0 A_JumpIf(pressingfire(),"VertiSwingHard");
+//		#### A 0 A_JumpIf(pressingaltfire(),"VertiSwingHard");
+//		TNT1 A 0 A_ReFire("startfire");
+		TNT1 A 0 A_WeaponBusy;
+		goto stylesheath;
+	stylesheath:
+		SBSH A 0 A_StartSound("Sabre/swing",CHAN_7);
+		SBS2 ABCD 2;
+		SBSH A 0 A_StartSound("Sabre/swing",CHAN_7);
+		SBSH KJIH 2;
+		SBSH G 0 A_StartSound("Sabre/Click",CHAN_7);
+		SBSH G 15;
+		SBSH F 0 A_StartSound("Sabre/Sheath",CHAN_7);
+		SBSH FEDCBA 2;
+		TNT1 A 0 {invoker.weaponstatus[KHARON_SHEATHED]=1;}
+		SBSH A 2;
+		goto readyend;
+		
+	zerkstylevertiswing:
+		SBVW GHI 2;
+//		TNT1 A 1;
+		#### A 0 A_Overlay(5,"hitcheckzerkvertical",false);
+		SBVS A 0 
+		{
+			if(hdplayerpawn(self))hdplayerpawn(self).fatigue+=3;
+			A_StartSound("Sabre/swing",CHAN_7);
+		}
+		SBVS ABCDEFG 1;
+		TNT1 A 2;
+		//#### A 0 A_JumpIf(pressingaltfire(),"altfire");
+//		TNT1 A 3;
+//		#### A 0 A_JumpIf(pressingfire(),"swingreturn");
+//		#### A 0 A_JumpIf(pressingaltfire(),"startfire");
+//		TNT1 A 0 A_ReFire("startfire");
+		TNT1 A 0 A_WeaponBusy;
+		goto zerkstylehoriswing;
+	zerkstylehoriswing:
+		SBHW FED 2;
+//		TNT1 A 1;
+		#### A 0 A_Overlay(5,"hitcheckzerkhorizontal",false);
+		SBHS A 0 
+		{
+			if(hdplayerpawn(self))hdplayerpawn(self).fatigue+=3;
+			A_StartSound("Sabre/swing",CHAN_7);
+		}
+		SBHS ABCDEF 1;
+		SBHS F 9;
+		//#### A 0 A_JumpIf(pressingaltfire(),"altfire");
+//		TNT1 A 3;
+//		#### A 0 A_JumpIf(pressingfire(),"swingreturn");
+//		#### A 0 A_JumpIf(pressingaltfire(),"startfire");
+//		TNT1 A 0 A_ReFire("startfire");
+		TNT1 A 0 A_WeaponBusy;
+		goto stylesheath;
+	
+		
+	
+	unload:
+	YEETcheck:
+		SBSH A 0{
+		if(invoker.weaponstatus[KHARON_SHEATHED]==1)
+			{
+				setweaponstate("YEET");
+				return;
+			}
+		}
+		SBSH EDCBA 3;
+		//KRN4 QRSTUV 2;
+		TNT1 A 0 {invoker.weaponstatus[KHARON_SHEATHED]=1;}
+	YEET:
+		---- A 1
+		{
+		if(player&&hdweapon(player.readyweapon)){
+		 player.cmd.buttons|=BT_ZOOM;
+		 DropInventory(player.readyweapon);
+		}
+		}
+		TNT1 A 0;
+		goto nope;
+		
+	hitcheckvertical:
+		TNT1 A 1 HDVerticalSliceSabre(20,-15,0,-10 );
+		TNT1 A 1
+		{
+		HDVerticalSliceSabre(25,-5,0,-10);
+		HDVerticalSliceSabre(30);
+		HDVerticalSliceSabre(25,5,0,10);
+		}
+		TNT1 A 1 HDVerticalSliceSabre(20,15,0,10);
+	stop;
+	
+	hitcheckhorizontal:
+		TNT1 A 1 HDHorizontalSliceSabre(20,-20);
+		TNT1 A 1
+		{
+		HDHorizontalSliceSabre(25,10);
+		HDHorizontalSliceSabre(30);
+		HDHorizontalSliceSabre(25,-10);
+		}
+		TNT1 A 1 HDHorizontalSliceSabre(20,20);
+	stop;
+	
+	hitcheckzerkvertical:
+		TNT1 AAA 1 HDVerticalSliceSabre(invoker.flicked?340:300);
+	stop;
+	
+	hitcheckzerkhorizontal:
+		TNT1 AAA 1 HDHorizontalSliceSabre(invoker.flicked?340:300);
+	stop;
+	
+	stabcheckzerk:
+		TNT1 AAA 1 HDStabSabre(invoker.flicked?340:300);
+	stop;
+	
+	IGOTEM:TNT1 A 1;stop;
+		
+	spawn:
+		SBRP A -1; //faxp
+		stop;
+	}
+}
+
+enum kharonstatus{
+	KHARON_JUSTUNLOAD=1,
+
+	KHARON_STATUS=0,
+	KHARON_SHEATHED=1,
+	//KHARON_REAL=2, imitation version of the one from demonsteele
+};
