@@ -293,7 +293,7 @@ class HDSabre:HDSabreWeapon{
 		//punchee.InStateSequence(curstate,resolvestate("falldown"));
 		
 		if(punchee.health>0)punchee.damagemobj(self,self,int(dmg),"SmallArms3");
-		//else HDF.Give(punchee,"SawGib",dmg*0.2);
+		else punchee.damagemobj(self,self,int(dmg*0.6),"SmallArms3");
 		
 		LineAttack(angle,70,pitch,punchline.hitline?(countinv("HDZerk")>PBZERK_COOLOFF?random(50,120):random(5,15)):0,"none",
 			pb_pufftype,
@@ -435,7 +435,7 @@ class HDSabre:HDSabreWeapon{
 		//punchee.InStateSequence(curstate,resolvestate("falldown"));
 		
 		if(punchee.health>0)punchee.damagemobj(self,self,int(dmg),"SmallArms3");
-		//else HDF.Give(punchee,"SawGib",dmg*0.2);
+		else punchee.damagemobj(self,self,int(dmg*0.6),"SmallArms3");
 		
 		LineAttack(angle,70,pitch,punchline.hitline?(countinv("HDZerk")>PBZERK_COOLOFF?random(50,120):random(5,15)):0,"none",
 			pb_pufftype,
@@ -579,7 +579,7 @@ class HDSabre:HDSabreWeapon{
 		//punchee.InStateSequence(curstate,resolvestate("falldown"));
 		
 		if(punchee.health>0)punchee.damagemobj(self,self,int(dmg),"SmallArms3");
-		//else HDF.Give(punchee,"SawGib",dmg*0.2);
+		else punchee.damagemobj(self,self,int(dmg*0.6),"SmallArms3");
 		
 		LineAttack(angle,70,pitch,punchline.hitline?(countinv("HDZerk")>PBZERK_COOLOFF?random(50,120):random(5,15)):0,"none",
 			pb_pufftype,
