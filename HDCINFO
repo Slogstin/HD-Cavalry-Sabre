@@ -1,2 +1,5 @@
 // Weapon Spawn Pools
 addSpawnTableSingleEntry => { "tableName": "ChainsawReplaces", "name": "HDSabre", "weight": "0.2", "persists": "true" }
+
+// Merchant Store Entries
+newMerchantStoreItem => { "type": "weapon", "category": "Slogstin", "item": "HDSabre", "icon": "SBRPA0", "displayName": "Cavalry Sabre", "basePrice": "100", "flavorText": "To arms!  CHARGE!" }
