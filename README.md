@@ -1,5 +1,6 @@
 # Description
-This Addon adds a Cavalry Sabre to [Hideous Destructor](https://codeberg.org/mc776/HideousDestructor). 
+This Addon adds a Cavalry Sabre to [Hideous Destructor](https://codeberg.org/mc776/HideousDestructor).  
+_Requires [HDCoreLib](https://github.com/HDest-Community/hdest-core-lib), made by the community._
 
 ![image](https://github.com/user-attachments/assets/8b033aba-907f-4d76-808c-ded2cefec5dd)
 
