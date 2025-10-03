@@ -1,5 +1,6 @@
 // Weapon Spawn Pools
-addSpawnTableSingleEntry => { "tableName": "ChainsawReplaces", "name": "HDSabre", "weight": "0.2", "persists": "true" }
+addSpawnTableSingleEntry => { "tableName": "ChainsawReplaces", "name": "SabreDrop", "weight": "0.2", "persists": "true", "enabled": "#SLG_Sabre_Spawns"}
 
 // Merchant Store Entries
-newMerchantStoreItem => { "type": "weapon", "category": "Virid Inc.", "item": "HDSabre", "icon": "SBRPA0", "displayName": "Cavalry Sabre", "basePrice": "100", "flavorText": "To arms!  CHARGE!" }
+newMerchantStoreItem => { "enabled": "#hdm_enable_sabre", "type": "weapon", "category": "$MERCH_CAT_SABRE", "item": "VirSabre", "icon": "SBRPB0", "displayName": "$MERCH_TAG_SABRE", "basePrice": "450", "flavorText": "$MERCH_FLAVOR_SABRE" }
+newMerchantStoreItem => { "enabled": "#hdm_enable_sabresheath", "type": "weapon", "category": "$MERCH_CAT_SABRESHEATH", "item": "VirSabreSheath", "icon": "SBRPC0", "displayName": "$MERCH_TAG_SABRESHEATH", "basePrice": "50", "flavorText": "$MERCH_FLAVOR_SABRESHEATH" }
