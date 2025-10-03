@@ -1,4 +1,24 @@
 version "4.14"
 
 #include "Zscript/sabre.zsc"
+
 #include "Zscript/Sabre_Hack.txt"
+
+
+class SabreDrop:RandomSpawner{
+	default{
+		dropitem "SabreSheathDrop",256,5;
+		dropitem "VirSabre",256,5;
+	}
+}
+
+class SabreSheathDrop : IdleDummy{
+	states{
+	spawn:
+		TNT1 A 0 nodelay{
+			spawn("VirSabre",pos+(2,0,0),ALLOW_REPLACE);
+			spawn("VirSabreSheath",pos+(7,0,0),ALLOW_REPLACE);
+			}
+			stop;
+	}
+}
