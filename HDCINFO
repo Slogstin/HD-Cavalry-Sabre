@@ -4,3 +4,6 @@ addSpawnTableSingleEntry => { "tableName": "ChainsawReplaces", "name": "SabreDro
 // Merchant Store Entries
 newMerchantStoreItem => { "enabled": "#hdm_enable_sabre", "type": "weapon", "category": "$MERCH_CAT_SABRE", "item": "VirSabre", "icon": "SBRPB0", "displayName": "$MERCH_TAG_SABRE", "basePrice": "450", "flavorText": "$MERCH_FLAVOR_SABRE" }
 newMerchantStoreItem => { "enabled": "#hdm_enable_sabresheath", "type": "weapon", "category": "$MERCH_CAT_SABRESHEATH", "item": "VirSabreSheath", "icon": "SBRPC0", "displayName": "$MERCH_TAG_SABRESHEATH", "basePrice": "50", "flavorText": "$MERCH_FLAVOR_SABRESHEATH" }
+
+//Ammo box Blacklist. Y'know, would be weird to get a sheath from an ammo box.
+addAmmoBoxBlacklist => { "ammoName": "VirSabreSheath" }
