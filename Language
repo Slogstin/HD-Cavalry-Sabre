@@ -1,0 +1,10 @@
+[enu default]
+
+//Sabre
+MERCH_CAT_SABRE					= "VIRID Inc.";
+MERCH_TAG_SABRE					= "Cavalry Sabre";
+MERCH_FLAVOR_SABRE				= "Sheath not included. trust me, you might want one.";
+//Sabre sheath
+MERCH_CAT_SABRESHEATH				= "VIRID Inc.";
+MERCH_TAG_SABRESHEATH				= "Cavalry Sabre Sheath";
+MERCH_FLAVOR_SABRESHEATH			= "Um..you do have the sword already, right?";

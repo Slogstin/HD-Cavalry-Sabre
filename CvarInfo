@@ -1,0 +1,6 @@
+//Spawning
+server bool SLG_Sabre_Spawns 				= true;
+
+//Merchant Store Filters
+server bool hdm_enable_sabre				= true;
+server bool hdm_enable_sabresheath			= true;
